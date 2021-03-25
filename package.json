@@ -1,0 +1,18 @@
+{
+  "name": "electron-mousehook",
+  "version": "1.0.0",
+  "description": "Electron mousehook for win.",
+  "main": "index.js",
+  "scripts": {
+    "build": "node-gyp rebuild"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "node-addon-api": "^3.0.0"
+  },
+  "dependencies": {
+    "bindings": "^1.5.0"
+  }
+ }
