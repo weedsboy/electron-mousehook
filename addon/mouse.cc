@@ -51,7 +51,9 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 	if (wParam == WM_LBUTTONDOWN || wParam == WM_NCLBUTTONDOWN || wParam == WM_LBUTTONUP ||
 		wParam == WM_NCLBUTTONUP || wParam == WM_MOUSEMOVE)
 	{
-		::PostMessage(g_hMainWnd, g_mouseMsg, wParam, lParam);
+		MSLLHOOKSTRUCT* data = (MSLLHOOKSTRUCT*)lParam;
+		POINT point = data->pt;
+		::PostMessage(g_hMainWnd, g_mouseMsg, wParam, MAKELONG(point.x, point.y));
 	}
 
 	return CallNextHookEx(g_hMouseHook, nCode, wParam, lParam);
