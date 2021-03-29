@@ -1,30 +1,11 @@
 ﻿#include <napi.h>
+#include <Windows.h>
 #include "mouse.h"
 
-Napi::Value StartMouseHook(const Napi::CallbackInfo& info)
-{
-    Napi::Number hwndValue = info[0].As<Napi::Number>();
-    int eventMsg = ::RegisterWindowMessage("MY MOUSE HOOK MESSAGE");
-
-    HWND hwnd = (HWND)hwndValue.Int32Value();
-
-    if(!::IsWindow(hwnd))
-    {
-        return Napi::Number::New(info.Env(), 0);
-    }
-
-    BOOL result = OpenMouseHook(hwnd, eventMsg);
-    return Napi::Number::New(info.Env(), result ? eventMsg : 0);
-}
-
-void StopMouseHook(const Napi::CallbackInfo& info)
-{
-    CloseMouseHook();
-}
-
-HWND g_hMainWnd = nullptr;
 UINT g_mouseMsg = 0;
 HHOOK g_hMouseHook = nullptr;
+BOOL g_isMouseHookOpen = FALSE;
+std::vector<HWND> g_wndList;
 
 BOOL EnableDebugPrivilege()
 {
@@ -53,33 +34,88 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 	{
 		MSLLHOOKSTRUCT* data = (MSLLHOOKSTRUCT*)lParam;
 		POINT point = data->pt;
-		::PostMessage(g_hMainWnd, g_mouseMsg, wParam, MAKELONG(point.x, point.y));
+
+		std::vector<HWND>::iterator it = g_wndList.begin();
+		for (; it != g_wndList.end(); it++)
+		{
+			::PostMessage(*it, g_mouseMsg, wParam, MAKELONG(point.x, point.y));
+		}
 	}
 
 	return CallNextHookEx(g_hMouseHook, nCode, wParam, lParam);
 }
 
-BOOL OpenMouseHook(HWND hMainWnd, UINT mouseMsg)
+BOOL OpenMouseHook(HWND hwnd)
 {
-	g_hMainWnd = hMainWnd;
-	g_mouseMsg = mouseMsg;
-
-	EnableDebugPrivilege();
-
-	g_hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, 0, 0);
-	if (g_hMouseHook == NULL)
+	std::vector<HWND>::iterator it = std::find(g_wndList.begin(), g_wndList.end(), hwnd);
+	if (it == g_wndList.end())
 	{
-		return FALSE;
+		g_wndList.push_back(hwnd);
 	}
 
-	return TRUE;
+	if (!g_isMouseHookOpen)
+	{
+		EnableDebugPrivilege();
+
+		g_mouseMsg = ::RegisterWindowMessage("MY MOUSE HOOK MESSAGE");
+		g_hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, 0, 0);
+		if (g_hMouseHook == NULL)
+		{
+			g_isMouseHookOpen = FALSE;
+			return FALSE;
+		}
+
+		g_isMouseHookOpen = TRUE;
+		return g_mouseMsg;
+	}
+
+	return g_mouseMsg;
 }
 
-void CloseMouseHook()
+void CloseMouseHook(HWND hWnd)
 {
-	if (g_hMouseHook)
+	std::vector<HWND>::iterator it = g_wndList.begin();
+	for (; it != g_wndList.end(); )
 	{
-		UnhookWindowsHookEx(g_hMouseHook);
-		g_hMouseHook = nullptr;
+		if (hWnd == *it)
+		{
+			it = g_wndList.erase(it);
+		}
+		else
+		{
+			it++;
+		}
 	}
+
+	if (g_wndList.size() <= 0)
+	{
+		g_isMouseHookOpen = FALSE;
+		if (g_hMouseHook)
+		{
+			UnhookWindowsHookEx(g_hMouseHook);
+			g_hMouseHook = nullptr;
+		}
+	}
+}
+
+Napi::Value StartMouseHook(const Napi::CallbackInfo& info)
+{
+	Napi::Number hwndValue = info[0].As<Napi::Number>();
+	HWND hwnd = (HWND)hwndValue.Int32Value();
+
+	if (!::IsWindow(hwnd))
+	{
+		return Napi::Number::New(info.Env(), 0);
+	}
+
+	BOOL result = OpenMouseHook(hwnd);
+	return Napi::Number::New(info.Env(), result);
+}
+
+void StopMouseHook(const Napi::CallbackInfo& info)
+{
+	Napi::Number hwndValue = info[0].As<Napi::Number>();
+	HWND hwnd = (HWND)hwndValue.Int32Value();
+
+	CloseMouseHook(hwnd);
 }
