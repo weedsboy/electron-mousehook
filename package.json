@@ -1,6 +1,6 @@
 {
   "name": "electron-mousehook",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Electron mousehook for win.",
   "main": "index.js",
   "scripts": {
@@ -14,6 +14,9 @@
   "dependencies": {
     "bindings": "^1.5.0"
   },
+  "os": [
+    "win32"
+  ],
   "author": {
     "email": "chenyanggo@163.com",
     "name": "weedsboy"
