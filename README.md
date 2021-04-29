@@ -25,7 +25,7 @@ win.hookWindowMessage(result, async (wParam, lParam) => {
 })
 
 //stop MouseHook
-mousehook.StopMouseHook()
+mousehook.StopMouseHook(wnd)
 
 ```
 

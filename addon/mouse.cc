@@ -1,6 +1,8 @@
 ﻿#include <napi.h>
-#include <Windows.h>
 #include "mouse.h"
+
+#ifdef WIN32
+#include <Windows.h>
 
 UINT g_mouseMsg = 0;
 HHOOK g_hMouseHook = nullptr;
@@ -119,3 +121,4 @@ void StopMouseHook(const Napi::CallbackInfo& info)
 
 	CloseMouseHook(hwnd);
 }
+#endif
