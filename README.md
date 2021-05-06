@@ -11,7 +11,11 @@ Must be called on the main thread.
 ```js
 //start MouseHook
 const mousehook = require('electron-mousehook')
-mousehook.StartMouseHook(wnd)
+const result = mousehook.StartMouseHook(wnd)
+if (result == 0) {
+    console.log('startMouseHook Error.')
+    return
+}
 
 win.hookWindowMessage(result, async (wParam, lParam) => {
     const event = wParam.readUInt32LE(0)
