@@ -31,8 +31,11 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 	if (nCode < 0)  // do not process the message 
 		return CallNextHookEx(g_hMouseHook, nCode, wParam, lParam);
 
-	if (wParam == WM_LBUTTONDOWN || wParam == WM_NCLBUTTONDOWN || wParam == WM_LBUTTONUP ||
-		wParam == WM_NCLBUTTONUP || wParam == WM_MOUSEMOVE)
+	if (wParam == WM_LBUTTONDOWN || wParam == WM_NCLBUTTONDOWN || 
+	    wParam == WM_LBUTTONUP || wParam == WM_NCLBUTTONUP || 
+		wParam == WM_RBUTTONDOWN || wParam == WM_NCRBUTTONDOWN || 
+		wParam == WM_RBUTTONUP || wParam == WM_NCRBUTTONUP || 
+		wParam == WM_MOUSEMOVE)
 	{
 		MSLLHOOKSTRUCT* data = (MSLLHOOKSTRUCT*)lParam;
 		POINT point = data->pt;
