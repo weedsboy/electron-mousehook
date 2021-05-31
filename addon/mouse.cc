@@ -1,4 +1,4 @@
-﻿#include <napi.h>
+#include <napi.h>
 #include "mouse.h"
 
 #ifdef WIN32
@@ -6,6 +6,7 @@
 
 UINT g_mouseMsg = 0;
 HHOOK g_hMouseHook = nullptr;
+HHOOK g_hKeyboardHook = nullptr;
 BOOL g_isMouseHookOpen = FALSE;
 std::vector<HWND> g_wndList;
 
@@ -50,6 +51,25 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(g_hMouseHook, nCode, wParam, lParam);
 }
 
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+
+	if (nCode < 0)  // do not process the message 
+		return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
+
+	KBDLLHOOKSTRUCT *pkbhs = (KBDLLHOOKSTRUCT *)lParam;
+	if (nCode == HC_ACTION && pkbhs->vkCode == VK_SPACE)
+	{
+		std::vector<HWND>::iterator it = g_wndList.begin();
+		for (; it != g_wndList.end(); it++)
+		{
+			::PostMessage(*it, g_mouseMsg, wParam, lParam);
+		}
+	}
+
+	return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
+}
+
 BOOL OpenMouseHook(HWND hwnd)
 {
 	std::vector<HWND>::iterator it = std::find(g_wndList.begin(), g_wndList.end(), hwnd);
@@ -64,6 +84,7 @@ BOOL OpenMouseHook(HWND hwnd)
 
 		g_mouseMsg = ::RegisterWindowMessage("MY MOUSE HOOK MESSAGE");
 		g_hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, 0, 0);
+		g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, 0, 0);
 		if (g_hMouseHook == NULL)
 		{
 			g_isMouseHookOpen = FALSE;
@@ -99,6 +120,12 @@ void CloseMouseHook(HWND hWnd)
 		{
 			UnhookWindowsHookEx(g_hMouseHook);
 			g_hMouseHook = nullptr;
+		}
+
+		if (g_hKeyboardHook)
+		{
+			UnhookWindowsHookEx(g_hKeyboardHook);
+			g_hKeyboardHook = nullptr;
 		}
 	}
 }
